@@ -10,19 +10,16 @@ The `auto_p` function in this library can be used like `wpautop`.
 ```rust
 extern crate html_auto_p;
 
-use html_auto_p::auto_p;
+use html_auto_p::*;
 
-assert_eq!("<p>Hello world!</p>", auto_p("Hello world!", false, false));
-assert_eq!("<p>Line 1<br>\nLine 2</p>", auto_p("Line 1\nLine 2", true, false));
-assert_eq!("<p>Line 1<br>\nLine 2</p>", auto_p("Line 1<br>\nLine 2", true, false));
-assert_eq!("<p>Paragraph 1</p>\n<p>Paragraph 2</p>", auto_p("Paragraph 1\n\nParagraph 2", false, false));
-assert_eq!("<pre>Line 1<br>\nLine 2</pre>", auto_p("<pre>Line 1<br>\nLine 2</pre>", true, false));
-assert_eq!("<pre>Line 1&lt;br&gt;\nLine 2</pre>", auto_p("<pre>Line 1<br>\nLine 2</pre>", true, true));
+assert_eq!("<p>Hello world!</p>", auto_p("Hello world!", Options::new()));
+assert_eq!("<p>Line 1<br>\nLine 2</p>", auto_p("Line 1\nLine 2", Options::new().br(true)));
+assert_eq!("<p>Line 1<br>\nLine 2</p>", auto_p("Line 1<br>\nLine 2", Options::new().br(true)));
+assert_eq!("<p>Paragraph 1</p>\n<p>Paragraph 2</p>", auto_p("Paragraph 1\n\nParagraph 2", Options::new()));
+assert_eq!("<pre>Line 1<br>\nLine 2</pre>", auto_p("<pre>Line 1<br>\nLine 2</pre>", Options::new().br(true)));
+assert_eq!("<pre>Line 1&lt;br&gt;\nLine 2</pre>", auto_p("<pre>Line 1<br>\nLine 2</pre>", Options::new().br(true).esc_pre(true)));
+assert_eq!("<pre>Line 1\nLine 2</pre>", auto_p("<pre>\nLine 1\nLine 2\n</pre>", Options::new().remove_useless_newlines_in_pre(true)));
 ```
-
-* The first parameter is the input HTML.
-* The second parameter is to control whether to convert remaining line-breaks to `<br>` elements.
-* The third parameter is to control whether to escape the inner HTML in `<pre>` elements. This is useful when the inner HTML needs to be formatted and be wrapped into other non-`<pre>` elements.
 
 ## Onig Support (alternative, unstable)
 
@@ -43,13 +40,18 @@ extern crate onig as regex;
 #[cfg(not(feature = "onig"))]
 extern crate regex;
 
+mod options;
+
 #[cfg(not(feature = "onig"))]
 use std::borrow::Cow;
 use std::fmt::Write;
+use std::str::from_utf8_unchecked;
 
 use once_cell::sync::Lazy;
 use regex::Regex;
 use trim_in_place::TrimInPlace;
+
+pub use options::*;
 
 macro_rules! all_blocks_tag_names_except_p {
     () => {
@@ -181,12 +183,11 @@ static RE_BR_ELEMENT_BEFORE_BLOCK_TAG: Lazy<Regex> = Lazy::new(|| {
 });
 
 /// A group of regex replaces used to identify text formatted with newlines and replace double line-breaks with HTML paragraph tags.
-/// If `br` is true, the remaining line-breaks after conversion become `<br>`.
 ///
 /// The original algorithm can be found in [wp-includes/formatting.php](https://github.com/WordPress/WordPress/blob/101d00601e8d00041218e31194c6f5e0dc4940aa/wp-includes/formatting.php#L442)
 ///
 /// This function does not 100% work like `wpautop` does.
-pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
+pub fn auto_p<S: Into<String>>(pee: S, options: Options) -> String {
     let mut pee = pee.into();
 
     pee.trim_in_place();
@@ -283,7 +284,7 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
 
     // Optionally insert line breaks.
     #[allow(clippy::let_and_return)]
-    let mut pee = if br {
+    let mut pee = if options.br {
         // Normalize `<br>`
         let mut pee = replace_all(&*RE_BR_ELEMENT, pee, "<br>");
 
@@ -366,7 +367,7 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
         recover(&mut pee, &*RE_SCRIPT_ELEMENT, &script_inner_html_buffer);
         recover(&mut pee, &*RE_TEXTAREA_ELEMENT, &svg_inner_html_buffer);
 
-        if esc_pre {
+        if options.esc_pre || options.remove_useless_newlines_in_pre {
             let mut v = Vec::with_capacity(pre_inner_html_buffer.len());
 
             for (captures, inner_html) in
@@ -377,8 +378,27 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
                 v.push((start..end, inner_html.0.as_str()));
             }
 
-            for (range, inner_html) in v.into_iter().rev() {
-                pee.replace_range(range, html_escape::encode_safe(inner_html).as_ref());
+            if options.esc_pre {
+                if options.remove_useless_newlines_in_pre {
+                    for (range, inner_html) in v.into_iter().rev() {
+                        pee.replace_range(
+                            range,
+                            html_escape::encode_safe(trim_newline_exactly_one(inner_html)).as_ref(),
+                        );
+                    }
+                } else {
+                    for (range, inner_html) in v.into_iter().rev() {
+                        pee.replace_range(range, html_escape::encode_safe(inner_html).as_ref());
+                    }
+                }
+            } else if options.remove_useless_newlines_in_pre {
+                for (range, inner_html) in v.into_iter().rev() {
+                    pee.replace_range(range, trim_newline_exactly_one(inner_html));
+                }
+            } else {
+                for (range, inner_html) in v.into_iter().rev() {
+                    pee.replace_range(range, inner_html);
+                }
             }
         } else {
             recover(&mut pee, &*RE_PRE_ELEMENT, &pre_inner_html_buffer);
@@ -397,6 +417,82 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
     }
 
     pee
+}
+
+fn trim_newline_exactly_one<S: ?Sized + AsRef<str>>(s: &S) -> &str {
+    let s = s.as_ref();
+    let bytes = s.as_bytes();
+    let length = bytes.len();
+
+    if length == 0 {
+        return "";
+    }
+
+    // from the start
+    let bytes = match bytes[0] {
+        b'\n' => {
+            if length == 1 {
+                return "";
+            } else if bytes[1] != b'\n' && bytes[1] != b'\r' {
+                &bytes[1..]
+            } else {
+                bytes
+            }
+        }
+        b'\r' => {
+            if length == 1 {
+                return "";
+            } else if bytes[1] == b'\n' {
+                if length == 2 {
+                    return "";
+                } else if bytes[2] != b'\n' && bytes[2] != b'\r' {
+                    &bytes[2..]
+                } else {
+                    bytes
+                }
+            } else if bytes[1] != b'\r' {
+                &bytes[1..]
+            } else {
+                bytes
+            }
+        }
+        _ => bytes,
+    };
+
+    let length = bytes.len();
+
+    // from the end
+    let bytes = match bytes[length - 1] {
+        b'\n' => {
+            if length == 1 {
+                return "";
+            } else if bytes[length - 2] != b'\n' && bytes[length - 2] != b'\r' {
+                &bytes[..(length - 1)]
+            } else {
+                bytes
+            }
+        }
+        b'\r' => {
+            if length == 1 {
+                return "";
+            } else if bytes[length - 2] == b'\n' {
+                if length == 2 {
+                    return "";
+                } else if bytes[length - 3] != b'\n' && bytes[length - 3] != b'\r' {
+                    &bytes[..(length - 2)]
+                } else {
+                    bytes
+                }
+            } else if bytes[length - 2] != b'\r' {
+                &bytes[..(length - 1)]
+            } else {
+                bytes
+            }
+        }
+        _ => bytes,
+    };
+
+    unsafe { from_utf8_unchecked(bytes) }
 }
 
 #[cfg(feature = "onig")]

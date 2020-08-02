@@ -4,6 +4,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+use html_auto_p::*;
+
 const DATA_FOLDER: &str = "data";
 
 #[test]
@@ -27,7 +29,10 @@ fn test_files_in_the_data_folder() {
 
                 html_file.read_to_string(&mut html).unwrap();
 
-                let autoped_html = html_auto_p::auto_p(html, true, true);
+                let autoped_html = auto_p(
+                    html,
+                    Options::new().br(true).esc_pre(true).remove_useless_newlines_in_pre(true),
+                );
 
                 let mut autoped_file = File::open(autoped_file_path.as_path()).unwrap();
                 let mut autoped_file_content = String::new();
