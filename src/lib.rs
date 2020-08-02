@@ -113,6 +113,7 @@ static RE_TAG: Lazy<Regex> =
     Lazy::new(|| Regex::new(concat!(r"</?[^\s<]+(", pattern_attributes!(), r")/?>")).unwrap());
 
 static RE_OTHER_NEWLINE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?:\r\n|\r)").unwrap());
+#[allow(clippy::trivial_regex)]
 static RE_EMPTY_PARAGRAPH: Lazy<Regex> = Lazy::new(|| Regex::new(r"<p></p>").unwrap());
 
 static RE_P_END_TAG_MISSING_START: Lazy<Regex> = Lazy::new(|| {
