@@ -1,6 +1,6 @@
 [package]
 name = "html-auto-p"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Magic Len <len@magiclen.org>"]
 edition = "2018"
 repository = "https://github.com/magiclen/html-auto-p"
@@ -21,4 +21,4 @@ regex = "1"
 once_cell = "1"
 html-escape = "0.2"
 trim-in-place = "0.1"
-onig = { version = "6", optional = true }
+onig = { version = "6", optional = true, default-features = false }
