@@ -113,8 +113,7 @@ static RE_TAG: Lazy<Regex> =
     Lazy::new(|| Regex::new(concat!(r"</?[^\s<]+(", pattern_attributes!(), r")/?>")).unwrap());
 
 static RE_OTHER_NEWLINE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?:\r\n|\r)").unwrap());
-static RE_AT_LEAST_TWO_NEWLINES: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n\n+").unwrap());
-static RE_EMPTY_PARAGRAPH: Lazy<Regex> = Lazy::new(|| Regex::new(r"<p>\s*</p>").unwrap());
+static RE_EMPTY_PARAGRAPH: Lazy<Regex> = Lazy::new(|| Regex::new(r"<p></p>").unwrap());
 
 static RE_P_END_TAG_MISSING_START: Lazy<Regex> = Lazy::new(|| {
     Regex::new(concat!(
@@ -240,7 +239,7 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
     }
 
     // Split up the contents into an array of strings, separated by at-least-two line breaks.
-    let pees = RE_AT_LEAST_TWO_NEWLINES.split(&pee);
+    let pees = pee.split("\n\n");
 
     // Reset `pee` prior to rebuilding.
     let mut pee = String::with_capacity(pee.len());
