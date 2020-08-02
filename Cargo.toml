@@ -1,0 +1,20 @@
+[package]
+name = "html-auto-p"
+version = "0.1.0"
+authors = ["Magic Len <len@magiclen.org>"]
+edition = "2018"
+categories = ["text-processing"]
+description = "This library provides a function like `wpautop` in Wordpress. It uses a group of regex replaces used to identify text formatted with newlines and replace double line-breaks with HTML paragraph tags."
+readme = "README.md"
+license = "MIT"
+include = ["src/**/*", "Cargo.toml", "README.md", "LICENSE"]
+
+[badges.travis-ci]
+repository = "magiclen/html-auto-p"
+branch = "master"
+
+[dependencies]
+regex = "1"
+once_cell = "1"
+html-escape = "0.2"
+trim-in-place = "0.1"
