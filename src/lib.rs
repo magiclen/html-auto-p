@@ -117,8 +117,14 @@ static RE_AT_LEAST_TWO_NEWLINES: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n\n+")
 static RE_EMPTY_PARAGRAPH: Lazy<Regex> = Lazy::new(|| Regex::new(r"<p>\s*</p>").unwrap());
 
 static RE_P_END_TAG_MISSING_START: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(concat!("(?i)", r"(<", pattern_all_blocks_except_p!(), pattern_attributes!(), r">)(\s*)([^<]+)</p>"))
-        .unwrap()
+    Regex::new(concat!(
+        "(?i)",
+        r"(<",
+        pattern_all_blocks_except_p!(),
+        pattern_attributes!(),
+        r">)(\s*)([^<]+)</p>"
+    ))
+    .unwrap()
 });
 static RE_P_START_TAG_MISSING_END: Lazy<Regex> = Lazy::new(|| {
     Regex::new(concat!("(?i)", r"<p>([^<]+)(\s*)(</", pattern_all_blocks_except_p!(), r"\s*>)"))
