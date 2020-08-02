@@ -26,6 +26,16 @@ assert_eq!("<pre>Line 1&lt;br&gt;\nLine 2</pre>", auto_p("<pre>Line 1<br>\nLine 
 * The second parameter is to control whether to convert remaining line-breaks to `<br>` elements.
 * The third parameter is to control whether to escape the inner HTML in `<pre>` elements. This is useful when the inner HTML needs to be formatted and be wrapped into other non-`<pre>` elements.
 
+## Onig Support (alternative, unstable)
+
+To use the [`onig`](https://crates.io/crates/onig) crate, enable the `onig` feature.
+
+```toml
+[dependencies.html-auto-p]
+version = "*"
+features = ["onig"]
+```
+
 ## Crates.io
 
 https://crates.io/crates/html-auto-p

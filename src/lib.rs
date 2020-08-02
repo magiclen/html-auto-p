@@ -23,12 +23,27 @@ assert_eq!("<pre>Line 1&lt;br&gt;\nLine 2</pre>", auto_p("<pre>Line 1<br>\nLine 
 * The first parameter is the input HTML.
 * The second parameter is to control whether to convert remaining line-breaks to `<br>` elements.
 * The third parameter is to control whether to escape the inner HTML in `<pre>` elements. This is useful when the inner HTML needs to be formatted and be wrapped into other non-`<pre>` elements.
+
+## Onig Support (alternative, unstable)
+
+To use the [`onig`](https://crates.io/crates/onig) crate, enable the `onig` feature.
+
+```toml
+[dependencies.html-auto-p]
+version = "*"
+features = ["onig"]
+```
 */
 
 extern crate once_cell;
-extern crate regex;
 extern crate trim_in_place;
 
+#[cfg(feature = "onig")]
+extern crate onig as regex;
+#[cfg(not(feature = "onig"))]
+extern crate regex;
+
+#[cfg(not(feature = "onig"))]
 use std::borrow::Cow;
 use std::fmt::Write;
 
@@ -190,9 +205,9 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
     {
         fn reserve(pee: &mut String, regex: &Regex, buffer: &mut Vec<(String, usize, usize)>) {
             for captures in regex.captures_iter(pee) {
-                let m = captures.get(2).unwrap();
+                let (s, start, end) = get(&captures, 2);
 
-                buffer.push((String::from(m.as_str()), m.start(), m.end()));
+                buffer.push((String::from(s), start, end));
             }
 
             let bytes = unsafe { pee.as_mut_vec() };
@@ -212,20 +227,16 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
     }
 
     // Standardize newline characters to `"\n"`.
-    let mut pee = match RE_OTHER_NEWLINE.replace_all(&pee, "\n") {
-        Cow::Owned(pee) => pee,
-        Cow::Borrowed(_) => pee,
-    };
+    let mut pee = replace_all(&*RE_OTHER_NEWLINE, pee, "\n");
 
     // Find newlines in all tags and replace them to `'\r'`s.
     {
         let mut newlines_in_tags: Vec<usize> = Vec::new();
 
         for captures in RE_TAG.captures_iter(&pee) {
-            let m = captures.get(1).unwrap();
-            let start = m.start();
+            let (s, start, _) = get(&captures, 1);
 
-            for (i, e) in m.as_str().bytes().enumerate() {
+            for (i, e) in s.bytes().enumerate() {
                 if e == b'\n' {
                     newlines_in_tags.push(i + start);
                 }
@@ -251,50 +262,30 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
     }
 
     // Remove empty paragraphs.
-    let mut pee = match RE_EMPTY_PARAGRAPH.replace_all(&pee, "") {
-        Cow::Owned(pee) => pee,
-        Cow::Borrowed(_) => pee,
-    };
+    let mut pee = replace_all(&*RE_EMPTY_PARAGRAPH, pee, "");
 
     pee.trim_matches_in_place('\n');
 
     // Add a starting `<p>` inside a block element if missing.
-    let pee = match RE_P_END_TAG_MISSING_START.replace_all(&pee, "$1$2<p>$3</p>") {
-        Cow::Owned(pee) => pee,
-        Cow::Borrowed(_) => pee,
-    };
+    let pee = replace_all(&*RE_P_END_TAG_MISSING_START, pee, "$1$2<p>$3</p>");
 
     // Add a closing `<p>` inside a block element if missing.
-    let pee = match RE_P_START_TAG_MISSING_END.replace_all(&pee, "<p>$1</p>$2$3") {
-        Cow::Owned(pee) => pee,
-        Cow::Borrowed(_) => pee,
-    };
+    let pee = replace_all(&*RE_P_START_TAG_MISSING_END, pee, "<p>$1</p>$2$3");
 
     // In some cases `<li>` may get wrapped in `<p>`, fix them.
-    let pee = match RE_LI_IN_PARAGRAPH.replace_all(&pee, "$1") {
-        Cow::Owned(pee) => pee,
-        Cow::Borrowed(_) => pee,
-    };
+    let pee = replace_all(&*RE_LI_IN_PARAGRAPH, pee, "$1");
 
     // If an opening or closing block element tag is preceded by an opening `<p>` tag, remove the `<p>` tag.
-    let pee = match RE_BLOCK_AND_PRESERVED_TAG_AFTER_P_START_TAG.replace_all(&pee, "$1") {
-        Cow::Owned(pee) => pee,
-        Cow::Borrowed(_) => pee,
-    };
+    let pee = replace_all(&*RE_BLOCK_AND_PRESERVED_TAG_AFTER_P_START_TAG, pee, "$1");
 
     // If an opening or closing block element tag is followed by a closing `</p>` tag, remove the `</p>` tag.
-    let pee = match RE_BLOCK_AND_PRESERVED_TAG_BEFORE_P_END_TAG.replace_all(&pee, "$1") {
-        Cow::Owned(pee) => pee,
-        Cow::Borrowed(_) => pee,
-    };
+    let pee = replace_all(&*RE_BLOCK_AND_PRESERVED_TAG_BEFORE_P_END_TAG, pee, "$1");
 
     // Optionally insert line breaks.
+    #[allow(clippy::let_and_return)]
     let mut pee = if br {
         // Normalize `<br>`
-        let mut pee = match RE_BR_ELEMENT.replace_all(&pee, "<br>") {
-            Cow::Owned(pee) => pee,
-            Cow::Borrowed(_) => pee,
-        };
+        let mut pee = replace_all(&*RE_BR_ELEMENT, pee, "<br>");
 
         // Replace any new line characters that aren't preceded by a `<br>` with a `<br>`.
         let mut v = Vec::new();
@@ -344,16 +335,10 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
         }
 
         // If a `<br>` tag is after an opening or closing block tag, remove it.
-        let pee = match RE_BR_ELEMENT_AFTER_BLOCK_TAG.replace_all(&pee, "$1\n") {
-            Cow::Owned(pee) => pee,
-            Cow::Borrowed(_) => pee,
-        };
+        let pee = replace_all(&*RE_BR_ELEMENT_AFTER_BLOCK_TAG, pee, "$1\n");
 
         // If a `<br>` tag is before an opening or closing block tags, remove it.
-        let pee = match RE_BR_ELEMENT_BEFORE_BLOCK_TAG.replace_all(&pee, "\n$1") {
-            Cow::Owned(pee) => pee,
-            Cow::Borrowed(_) => pee,
-        };
+        let pee = replace_all(&*RE_BR_ELEMENT_BEFORE_BLOCK_TAG, pee, "\n$1");
 
         pee
     } else {
@@ -366,9 +351,9 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
             let mut v = Vec::with_capacity(buffer.len());
 
             for (captures, inner_html) in regex.captures_iter(pee).zip(buffer.iter()) {
-                let m = captures.get(2).unwrap();
+                let (_, start, end) = get(&captures, 2);
 
-                v.push((m.start()..m.end(), inner_html.0.as_str()));
+                v.push((start..end, inner_html.0.as_str()));
             }
 
             for (range, inner_html) in v.into_iter().rev() {
@@ -387,9 +372,9 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
             for (captures, inner_html) in
                 RE_PRE_ELEMENT.captures_iter(pee.as_str()).zip(pre_inner_html_buffer.iter())
             {
-                let m = captures.get(2).unwrap();
+                let (_, start, end) = get(&captures, 2);
 
-                v.push((m.start()..m.end(), inner_html.0.as_str()));
+                v.push((start..end, inner_html.0.as_str()));
             }
 
             for (range, inner_html) in v.into_iter().rev() {
@@ -412,4 +397,51 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
     }
 
     pee
+}
+
+#[cfg(feature = "onig")]
+#[inline]
+fn replace_all(regex: &Regex, pee: String, rep: &str) -> String {
+    regex.replace_all(pee.as_str(), |caps: &regex::Captures| {
+        let mut s = String::with_capacity(rep.len());
+
+        let mut chars = rep.chars();
+
+        while let Some(c) = chars.next() {
+            if c == '$' {
+                let index = (chars.next().unwrap() as u8 - b'0') as usize;
+
+                s.push_str(caps.at(index).unwrap());
+            } else {
+                s.push(c);
+            }
+        }
+
+        s
+    })
+}
+
+#[cfg(not(feature = "onig"))]
+#[inline]
+fn replace_all(regex: &Regex, pee: String, rep: &str) -> String {
+    match regex.replace_all(pee.as_str(), rep) {
+        Cow::Owned(pee) => pee,
+        Cow::Borrowed(_) => pee,
+    }
+}
+
+#[cfg(feature = "onig")]
+#[inline]
+fn get<'a>(captures: &regex::Captures<'a>, index: usize) -> (&'a str, usize, usize) {
+    let (start, end) = captures.pos(index).unwrap();
+
+    (captures.at(index).unwrap(), start, end)
+}
+
+#[cfg(not(feature = "onig"))]
+#[inline]
+fn get<'a>(captures: &regex::Captures<'a>, index: usize) -> (&'a str, usize, usize) {
+    let captures = captures.get(index).unwrap();
+
+    (captures.as_str(), captures.start(), captures.end())
 }
