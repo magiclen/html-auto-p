@@ -22,7 +22,7 @@ assert_eq!("<pre>Line 1&lt;br&gt;\nLine 2</pre>", auto_p("<pre>Line 1<br>\nLine 
 
 * The first parameter is the input HTML.
 * The second parameter is to control whether to convert remaining line-breaks to `<br>` elements.
-* The third parameter is to control whether to escape the inner HTML in `<pre>` elements. This is useful when the inner HTML needs to be formated and be wrapped into other non-`<pre>` elements.
+* The third parameter is to control whether to escape the inner HTML in `<pre>` elements. This is useful when the inner HTML needs to be formatted and be wrapped into other non-`<pre>` elements.
 */
 
 extern crate once_cell;
@@ -169,6 +169,8 @@ static RE_BR_ELEMENT_BEFORE_BLOCK_TAG: Lazy<Regex> = Lazy::new(|| {
 /// If `br` is true, the remaining line-breaks after conversion become `<br>`.
 ///
 /// The original algorithm can be found in [wp-includes/formatting.php](https://github.com/WordPress/WordPress/blob/101d00601e8d00041218e31194c6f5e0dc4940aa/wp-includes/formatting.php#L442)
+///
+/// This function does not 100% work like `wpautop` does.
 pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
     let mut pee = pee.into();
 
@@ -347,7 +349,7 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
             Cow::Borrowed(_) => pee,
         };
 
-        // If a `<br>` tag is before a subset of opening or closing block tags, remove it.
+        // If a `<br>` tag is before an opening or closing block tags, remove it.
         let pee = match RE_BR_ELEMENT_BEFORE_BLOCK_TAG.replace_all(&pee, "\n$1") {
             Cow::Owned(pee) => pee,
             Cow::Borrowed(_) => pee,
@@ -358,7 +360,7 @@ pub fn auto_p<S: Into<String>>(pee: S, br: bool, esc_pre: bool) -> String {
         pee
     };
 
-    // Recover the inner HTML that was filled with `'0'` before.
+    // Recover the inner HTML that have been filled with `'0'` before.
     {
         fn recover(pee: &mut String, regex: &Regex, buffer: &[(String, usize, usize)]) {
             let mut v = Vec::with_capacity(buffer.len());

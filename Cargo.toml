@@ -3,6 +3,7 @@ name = "html-auto-p"
 version = "0.1.0"
 authors = ["Magic Len <len@magiclen.org>"]
 edition = "2018"
+keywords = ["html", "wpautop", "autop", "paragraph", "br"]
 categories = ["text-processing"]
 description = "This library provides a function like `wpautop` in Wordpress. It uses a group of regex replaces used to identify text formatted with newlines and replace double line-breaks with HTML paragraph tags."
 readme = "README.md"
