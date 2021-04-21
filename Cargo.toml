@@ -1,6 +1,6 @@
 [package]
 name = "html-auto-p"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Magic Len <len@magiclen.org>"]
 edition = "2018"
 repository = "https://github.com/magiclen/html-auto-p"
@@ -11,10 +11,6 @@ description = "This library provides a function like `wpautop` in Wordpress. It 
 readme = "README.md"
 license = "MIT"
 include = ["src/**/*", "Cargo.toml", "README.md", "LICENSE"]
-
-[badges.travis-ci]
-repository = "magiclen/html-auto-p"
-branch = "master"
 
 [dependencies]
 regex = "1"

@@ -1,7 +1,7 @@
 HTML Auto `<p>`
 ====================
 
-[![Build Status](https://travis-ci.org/magiclen/html-auto-p.svg?branch=master)](https://travis-ci.org/magiclen/html-auto-p)
+[![CI](https://github.com/magiclen/html-auto-p/actions/workflows/ci.yml/badge.svg)](https://github.com/magiclen/html-auto-p/actions/workflows/ci.yml)
 
 This library provides a function like `wpautop` in Wordpress. It uses a group of regex replaces used to identify text formatted with newlines and replace double line-breaks with HTML paragraph tags.
 
