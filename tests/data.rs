@@ -1,5 +1,3 @@
-extern crate html_auto_p;
-
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -17,12 +15,10 @@ fn test_files_in_the_data_folder() {
             let file_path = dir.path();
             let file_name = file_path.file_name().unwrap().to_str().unwrap();
 
-            if file_name.ends_with(".test.html") {
+            if let Some(file_name) = file_name.strip_suffix(".test.html") {
                 let html_file_path = &file_path;
-                let autoped_file_path = html_file_path
-                    .parent()
-                    .unwrap()
-                    .join(format!("{}.autoped.html", &file_name[..(file_name.len() - 10)]));
+                let autoped_file_path =
+                    html_file_path.parent().unwrap().join(format!("{}.autoped.html", file_name));
 
                 let mut html_file = File::open(html_file_path).unwrap();
                 let mut html = String::new();

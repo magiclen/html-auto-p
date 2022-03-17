@@ -10,8 +10,6 @@ Someone who familiars with HTML would prefer directly writing plain HTML instead
 The `auto_p` function in this library can be used like `wpautop`.
 
 ```rust
-extern crate html_auto_p;
-
 use html_auto_p::*;
 
 assert_eq!("<p>Hello world!</p>", auto_p("Hello world!", Options::new()));

@@ -1,5 +1,3 @@
-extern crate html_auto_p;
-
 use html_auto_p::*;
 
 #[test]

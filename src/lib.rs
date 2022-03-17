@@ -8,8 +8,6 @@ Someone who familiars with HTML would prefer directly writing plain HTML instead
 The `auto_p` function in this library can be used like `wpautop`.
 
 ```rust
-extern crate html_auto_p;
-
 use html_auto_p::*;
 
 assert_eq!("<p>Hello world!</p>", auto_p("Hello world!", Options::new()));
@@ -32,13 +30,8 @@ features = ["onig"]
 ```
 */
 
-extern crate once_cell;
-extern crate trim_in_place;
-
 #[cfg(feature = "onig")]
 extern crate onig as regex;
-#[cfg(not(feature = "onig"))]
-extern crate regex;
 
 mod options;
 
