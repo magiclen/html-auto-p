@@ -213,15 +213,15 @@ pub fn auto_p<S: Into<String>>(pee: S, options: Options) -> String {
             }
         }
 
-        reserve(&mut pee, &*RE_PRE_ELEMENT, &mut pre_inner_html_buffer);
-        reserve(&mut pee, &*RE_TEXTAREA_ELEMENT, &mut textarea_inner_html_buffer);
-        reserve(&mut pee, &*RE_SCRIPT_ELEMENT, &mut script_inner_html_buffer);
-        reserve(&mut pee, &*RE_STYLE_ELEMENT, &mut style_inner_html_buffer);
-        reserve(&mut pee, &*RE_SVG_ELEMENT, &mut svg_inner_html_buffer);
+        reserve(&mut pee, &RE_PRE_ELEMENT, &mut pre_inner_html_buffer);
+        reserve(&mut pee, &RE_TEXTAREA_ELEMENT, &mut textarea_inner_html_buffer);
+        reserve(&mut pee, &RE_SCRIPT_ELEMENT, &mut script_inner_html_buffer);
+        reserve(&mut pee, &RE_STYLE_ELEMENT, &mut style_inner_html_buffer);
+        reserve(&mut pee, &RE_SVG_ELEMENT, &mut svg_inner_html_buffer);
     }
 
     // Standardize newline characters to `"\n"`.
-    let mut pee = replace_all(&*RE_OTHER_NEWLINE, pee, "\n");
+    let mut pee = replace_all(&RE_OTHER_NEWLINE, pee, "\n");
 
     // Find newlines in all tags and replace them to `'\r'`s.
     {
@@ -256,30 +256,30 @@ pub fn auto_p<S: Into<String>>(pee: S, options: Options) -> String {
     }
 
     // Remove empty paragraphs.
-    let mut pee = replace_all(&*RE_EMPTY_PARAGRAPH, pee, "");
+    let mut pee = replace_all(&RE_EMPTY_PARAGRAPH, pee, "");
 
     pee.trim_matches_in_place('\n');
 
     // Add a starting `<p>` inside a block element if missing.
-    let pee = replace_all(&*RE_P_END_TAG_MISSING_START, pee, "$1$2<p>$3</p>");
+    let pee = replace_all(&RE_P_END_TAG_MISSING_START, pee, "$1$2<p>$3</p>");
 
     // Add a closing `<p>` inside a block element if missing.
-    let pee = replace_all(&*RE_P_START_TAG_MISSING_END, pee, "<p>$1</p>$2$3");
+    let pee = replace_all(&RE_P_START_TAG_MISSING_END, pee, "<p>$1</p>$2$3");
 
     // In some cases `<li>` may get wrapped in `<p>`, fix them.
-    let pee = replace_all(&*RE_LI_IN_PARAGRAPH, pee, "$1");
+    let pee = replace_all(&RE_LI_IN_PARAGRAPH, pee, "$1");
 
     // If an opening or closing block element tag is preceded by an opening `<p>` tag, remove the `<p>` tag.
-    let pee = replace_all(&*RE_BLOCK_AND_PRESERVED_TAG_AFTER_P_START_TAG, pee, "$1");
+    let pee = replace_all(&RE_BLOCK_AND_PRESERVED_TAG_AFTER_P_START_TAG, pee, "$1");
 
     // If an opening or closing block element tag is followed by a closing `</p>` tag, remove the `</p>` tag.
-    let pee = replace_all(&*RE_BLOCK_AND_PRESERVED_TAG_BEFORE_P_END_TAG, pee, "$1");
+    let pee = replace_all(&RE_BLOCK_AND_PRESERVED_TAG_BEFORE_P_END_TAG, pee, "$1");
 
     // Optionally insert line breaks.
     #[allow(clippy::let_and_return)]
     let mut pee = if options.br {
         // Normalize `<br>`
-        let mut pee = replace_all(&*RE_BR_ELEMENT, pee, "<br>");
+        let mut pee = replace_all(&RE_BR_ELEMENT, pee, "<br>");
 
         // Replace any new line characters that aren't preceded by a `<br>` with a `<br>`.
         let mut v = Vec::new();
@@ -329,10 +329,10 @@ pub fn auto_p<S: Into<String>>(pee: S, options: Options) -> String {
         }
 
         // If a `<br>` tag is after an opening or closing block tag, remove it.
-        let pee = replace_all(&*RE_BR_ELEMENT_AFTER_BLOCK_TAG, pee, "$1\n");
+        let pee = replace_all(&RE_BR_ELEMENT_AFTER_BLOCK_TAG, pee, "$1\n");
 
         // If a `<br>` tag is before an opening or closing block tags, remove it.
-        let pee = replace_all(&*RE_BR_ELEMENT_BEFORE_BLOCK_TAG, pee, "\n$1");
+        let pee = replace_all(&RE_BR_ELEMENT_BEFORE_BLOCK_TAG, pee, "\n$1");
 
         pee
     } else {
@@ -355,10 +355,10 @@ pub fn auto_p<S: Into<String>>(pee: S, options: Options) -> String {
             }
         }
 
-        recover(&mut pee, &*RE_SVG_ELEMENT, &svg_inner_html_buffer);
-        recover(&mut pee, &*RE_STYLE_ELEMENT, &style_inner_html_buffer);
-        recover(&mut pee, &*RE_SCRIPT_ELEMENT, &script_inner_html_buffer);
-        recover(&mut pee, &*RE_TEXTAREA_ELEMENT, &svg_inner_html_buffer);
+        recover(&mut pee, &RE_SVG_ELEMENT, &svg_inner_html_buffer);
+        recover(&mut pee, &RE_STYLE_ELEMENT, &style_inner_html_buffer);
+        recover(&mut pee, &RE_SCRIPT_ELEMENT, &script_inner_html_buffer);
+        recover(&mut pee, &RE_TEXTAREA_ELEMENT, &svg_inner_html_buffer);
 
         if options.esc_pre || options.remove_useless_newlines_in_pre {
             let mut v = Vec::with_capacity(pre_inner_html_buffer.len());
@@ -394,7 +394,7 @@ pub fn auto_p<S: Into<String>>(pee: S, options: Options) -> String {
                 }
             }
         } else {
-            recover(&mut pee, &*RE_PRE_ELEMENT, &pre_inner_html_buffer);
+            recover(&mut pee, &RE_PRE_ELEMENT, &pre_inner_html_buffer);
         }
     }
 
