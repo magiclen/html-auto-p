@@ -37,14 +37,12 @@ mod options;
 
 #[cfg(not(feature = "onig"))]
 use std::borrow::Cow;
-use std::fmt::Write;
-use std::str::from_utf8_unchecked;
+use std::{fmt::Write, str::from_utf8_unchecked};
 
 use once_cell::sync::Lazy;
+pub use options::*;
 use regex::Regex;
 use trim_in_place::TrimInPlace;
-
-pub use options::*;
 
 macro_rules! all_blocks_tag_names_except_p {
     () => {
@@ -90,8 +88,9 @@ macro_rules! pattern_all_block_and_preserved_tag_names {
 
 macro_rules! pattern_attributes {
     () => {
-        "(?:\\s+[^<>\\s=]+(?:=(?:|(?:[^'\"])|(?:[^'\"][^\\s<>]*[^'\"])|(?:\"[^\"]*\")|(?:'[^']*')))?)*\\s*"
-    }
+        "(?:\\s+[^<>\\s=]+(?:=(?:|(?:[^'\"])|(?:[^'\"][^\\s<>]*[^'\"])|(?:\"[^\"]*\")|(?:'[^']*'\
+         )))?)*\\s*"
+    };
 }
 
 static RE_PRE_ELEMENT: Lazy<Regex> = Lazy::new(|| {
@@ -431,7 +430,7 @@ fn trim_newline_exactly_one<S: ?Sized + AsRef<str>>(s: &S) -> &str {
             } else {
                 bytes
             }
-        }
+        },
         b'\r' => {
             if length == 1 {
                 return "";
@@ -448,7 +447,7 @@ fn trim_newline_exactly_one<S: ?Sized + AsRef<str>>(s: &S) -> &str {
             } else {
                 bytes
             }
-        }
+        },
         _ => bytes,
     };
 
@@ -464,7 +463,7 @@ fn trim_newline_exactly_one<S: ?Sized + AsRef<str>>(s: &S) -> &str {
             } else {
                 bytes
             }
-        }
+        },
         b'\r' => {
             if length == 1 {
                 return "";
@@ -481,7 +480,7 @@ fn trim_newline_exactly_one<S: ?Sized + AsRef<str>>(s: &S) -> &str {
             } else {
                 bytes
             }
-        }
+        },
         _ => bytes,
     };
 

@@ -2,9 +2,9 @@
 /// Options for the `auto_p` function.
 pub struct Options {
     /// Whether to convert remaining line-breaks to `<br>` elements.
-    pub br: bool,
+    pub br:                             bool,
     /// Whether to escape the inner HTML in `<pre>` elements. This is useful when the inner HTML needs to be formatted and be wrapped into other non-`<pre>` elements.
-    pub esc_pre: bool,
+    pub esc_pre:                        bool,
     /// Whether to remove useless newlines in the inner HTML of `<pre>` elements. This is useful to beautifully form code into `<pre>\n...\n</pre>` without worrying about the adjacent newlines' effects.
     pub remove_useless_newlines_in_pre: bool,
 }
@@ -14,8 +14,8 @@ impl Options {
     #[inline]
     pub const fn new() -> Self {
         Options {
-            br: false,
-            esc_pre: false,
+            br:                             false,
+            esc_pre:                        false,
             remove_useless_newlines_in_pre: false,
         }
     }
