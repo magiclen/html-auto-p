@@ -1,9 +1,9 @@
 [package]
 name = "html-auto-p"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Magic Len <len@magiclen.org>"]
 edition = "2021"
-rust-version = "1.58"
+rust-version = "1.61"
 repository = "https://github.com/magiclen/html-auto-p"
 homepage = "https://magiclen.org/html-auto-p"
 keywords = ["html", "wpautop", "autop", "paragraph", "br"]
