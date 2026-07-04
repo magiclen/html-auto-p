@@ -246,7 +246,9 @@ pub fn auto_p<S: Into<String>>(pee: S, options: Options) -> String {
     let pees = pee.split("\n\n");
 
     // Reset `pee` prior to rebuilding.
-    let mut pee = String::with_capacity(pee.len());
+    let separator_count = pee.matches("\n\n").count();
+    let chunk_count = separator_count + 1;
+    let mut pee = String::with_capacity(pee.len() - separator_count * 2 + chunk_count * 8);
 
     // Rebuild the content as a string, wrapping every bit with a `<p>`.
     for tinkle in pees {
@@ -356,7 +358,7 @@ pub fn auto_p<S: Into<String>>(pee: S, options: Options) -> String {
         recover(&mut pee, &RE_SVG_ELEMENT, &svg_inner_html_buffer);
         recover(&mut pee, &RE_STYLE_ELEMENT, &style_inner_html_buffer);
         recover(&mut pee, &RE_SCRIPT_ELEMENT, &script_inner_html_buffer);
-        recover(&mut pee, &RE_TEXTAREA_ELEMENT, &svg_inner_html_buffer);
+        recover(&mut pee, &RE_TEXTAREA_ELEMENT, &textarea_inner_html_buffer);
 
         if options.esc_pre || options.remove_useless_newlines_in_pre {
             let mut v = Vec::with_capacity(pre_inner_html_buffer.len());
