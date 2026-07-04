@@ -37,9 +37,8 @@ mod options;
 
 #[cfg(not(feature = "onig"))]
 use std::borrow::Cow;
-use std::{fmt::Write, str::from_utf8_unchecked};
+use std::{fmt::Write, str::from_utf8_unchecked, sync::LazyLock};
 
-use once_cell::sync::Lazy;
 pub use options::*;
 use regex::Regex;
 use trim_in_place::TrimInPlace;
@@ -93,10 +92,10 @@ macro_rules! pattern_attributes {
     };
 }
 
-static RE_PRE_ELEMENT: Lazy<Regex> = Lazy::new(|| {
+static RE_PRE_ELEMENT: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!("(?i)", "(<pre", pattern_attributes!(), r">)([\s\S]*?)(</pre\s*>)")).unwrap()
 });
-static RE_TEXTAREA_ELEMENT: Lazy<Regex> = Lazy::new(|| {
+static RE_TEXTAREA_ELEMENT: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         "(?i)",
         "(<textarea",
@@ -105,27 +104,27 @@ static RE_TEXTAREA_ELEMENT: Lazy<Regex> = Lazy::new(|| {
     ))
     .unwrap()
 });
-static RE_SCRIPT_ELEMENT: Lazy<Regex> = Lazy::new(|| {
+static RE_SCRIPT_ELEMENT: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!("(?i)", "(<script", pattern_attributes!(), r">)([\s\S]*?)(</script\s*>)"))
         .unwrap()
 });
-static RE_STYLE_ELEMENT: Lazy<Regex> = Lazy::new(|| {
+static RE_STYLE_ELEMENT: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!("(?i)", "(<style", pattern_attributes!(), r">)([\s\S]*?)(</style\s*>)"))
         .unwrap()
 });
-static RE_SVG_ELEMENT: Lazy<Regex> = Lazy::new(|| {
+static RE_SVG_ELEMENT: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!("(?i)", "(<svg", pattern_attributes!(), r">)([\s\S]*?)(</svg\s*>)")).unwrap()
 });
-static RE_BR_ELEMENT: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)<br\s*/?>").unwrap());
+static RE_BR_ELEMENT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)<br\s*/?>").unwrap());
 
-static RE_TAG: Lazy<Regex> =
-    Lazy::new(|| Regex::new(concat!(r"</?[^\s<]+(", pattern_attributes!(), r")/?>")).unwrap());
+static RE_TAG: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(concat!(r"</?[^\s<]+(", pattern_attributes!(), r")/?>")).unwrap());
 
-static RE_OTHER_NEWLINE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?:\r\n|\r)").unwrap());
+static RE_OTHER_NEWLINE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?:\r\n|\r)").unwrap());
 #[allow(clippy::trivial_regex)]
-static RE_EMPTY_PARAGRAPH: Lazy<Regex> = Lazy::new(|| Regex::new(r"<p></p>").unwrap());
+static RE_EMPTY_PARAGRAPH: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<p></p>").unwrap());
 
-static RE_P_END_TAG_MISSING_START: Lazy<Regex> = Lazy::new(|| {
+static RE_P_END_TAG_MISSING_START: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         "(?i)",
         r"(<",
@@ -135,16 +134,16 @@ static RE_P_END_TAG_MISSING_START: Lazy<Regex> = Lazy::new(|| {
     ))
     .unwrap()
 });
-static RE_P_START_TAG_MISSING_END: Lazy<Regex> = Lazy::new(|| {
+static RE_P_START_TAG_MISSING_END: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!("(?i)", r"<p>([^<]+)(\s*)(</", pattern_all_blocks_except_p!(), r"\s*>)"))
         .unwrap()
 });
 
-static RE_LI_IN_PARAGRAPH: Lazy<Regex> = Lazy::new(|| {
+static RE_LI_IN_PARAGRAPH: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!("(?i)", r"<p>(<li", pattern_attributes!(), r">[\s\S]*)</p>")).unwrap()
 });
 
-static RE_BLOCK_AND_PRESERVED_TAG_AFTER_P_START_TAG: Lazy<Regex> = Lazy::new(|| {
+static RE_BLOCK_AND_PRESERVED_TAG_AFTER_P_START_TAG: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         "(?i)",
         r"<p>(</?",
@@ -154,7 +153,7 @@ static RE_BLOCK_AND_PRESERVED_TAG_AFTER_P_START_TAG: Lazy<Regex> = Lazy::new(|| 
     ))
     .unwrap()
 });
-static RE_BLOCK_AND_PRESERVED_TAG_BEFORE_P_END_TAG: Lazy<Regex> = Lazy::new(|| {
+static RE_BLOCK_AND_PRESERVED_TAG_BEFORE_P_END_TAG: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         "(?i)",
         r"(</?",
@@ -165,11 +164,11 @@ static RE_BLOCK_AND_PRESERVED_TAG_BEFORE_P_END_TAG: Lazy<Regex> = Lazy::new(|| {
     .unwrap()
 });
 
-static RE_BR_ELEMENT_AFTER_BLOCK_TAG: Lazy<Regex> = Lazy::new(|| {
+static RE_BR_ELEMENT_AFTER_BLOCK_TAG: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!("(?i)", r"(</?", pattern_all_blocks!(), pattern_attributes!(), r">)<br>\n"))
         .unwrap()
 });
-static RE_BR_ELEMENT_BEFORE_BLOCK_TAG: Lazy<Regex> = Lazy::new(|| {
+static RE_BR_ELEMENT_BEFORE_BLOCK_TAG: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!("(?i)", r"<br>\n(</?", pattern_all_blocks!(), pattern_attributes!(), r">)"))
         .unwrap()
 });
